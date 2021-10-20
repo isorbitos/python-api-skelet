@@ -10,6 +10,7 @@ from apispec import APISpec
 from flask_apispec.extension import FlaskApiSpec
 from schemas import VideosSchema,UserSchema, AuthSchema
 from flask_apispec import use_kwargs, marshal_with
+import os
 import logging
 
 
@@ -45,11 +46,14 @@ from models import *
 Base.metadata.create_all(bind=engine)
 
 def setup_logger():
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
 
+
+
+    logger = logging.getLogger(__name__)
+    os.makedirs(os.path.dirname('log/'), exist_ok=True)
+    logger.setLevel(logging.DEBUG)
     formatter =  logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
-    file_handler = logging.FileHandler('log/api.log')
+    file_handler = logging.FileHandler('log/api.log', mode='a')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
