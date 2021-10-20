@@ -10,6 +10,8 @@ from apispec import APISpec
 from flask_apispec.extension import FlaskApiSpec
 from schemas import VideosSchema,UserSchema, AuthSchema
 from flask_apispec import use_kwargs, marshal_with
+import logging
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -42,7 +44,18 @@ from models import *
 
 Base.metadata.create_all(bind=engine)
 
+def setup_logger():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
 
+    formatter =  logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s')
+    file_handler = logging.FileHandler('log/api.log')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    return  logger
+
+logger = setup_logger()
 
 @app.get("/tutorials")
 @jwt_required()
@@ -52,6 +65,7 @@ def get_list():
         user_id = get_jwt_identity()
         videos = Video.query.filter(Video.user_id == user_id)
     except Exception as e:
+        logger.warning(f'user: {user_id} - read action failed with errors: {e}')
         return {'message':str(e)}, 400
     # serialized = []
     # for video in videos:
@@ -71,6 +85,7 @@ def update_list(**kwargs):
         session.add(new_one)
         session.commit()
     except Exception as e:
+        logger.warning(f'user: {user_id} - post action failed with errors: {e}')
         return {'message': str(e)}, 400
     return new_one
 
@@ -88,6 +103,7 @@ def update_tutorial(tutorial_id, **kwargs):
             setattr(item, key, value)
         session.commit()
     except Exception as e:
+        logger.warning(f'user: {user_id} - tutor: {tutorial_id} edit action failed with errors: {e}')
         return {'message': str(e)}, 400
     return item
 
@@ -103,6 +119,7 @@ def delete_tutorial(tutorial_id):
         session.delete(item)
         session.commit()
     except Exception as e:
+        logger.warning(f'user: {user_id} - tutor: {tutorial_id} delete action failed with errors: {e}')
         return {'message': str(e)}, 400
     return {'message':'Item deleted'}, 204
 
@@ -116,6 +133,7 @@ def register(**kwargs):
         session.commit()
         token = user.get_token()
     except Exception as e:
+        logger.warning(f'registration failed with errors: {e}')
         return {'message': str(e)}, 400
     return {'access_token': token}
 
@@ -127,6 +145,7 @@ def login(**kwargs):
         user = User.authenticate(**kwargs)
         token = user.get_token()
     except Exception as e:
+        logger.warning(f'user with email: {kwargs["email"]} failed with errors: {e}')
         return {'message': str(e)}, 400
     return {'access_token': token}
 
@@ -138,6 +157,7 @@ def shutdown_session(exception=None):
 def error_handler(err):
     headers = err.data.get('headers', None)
     messages = err.data.get('messages', ['Invalid request'])
+    logger.warning(f'Invalid input params: {messages}')
     if headers:
         return jsonify({'message':messages}), 400, headers
     else:
