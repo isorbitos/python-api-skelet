@@ -1,5 +1,5 @@
 # pytest test.py
-from main import client
+from . import client
 
 def test_simple():
     my_list = [1, 2, 3, 4]

@@ -1,4 +1,4 @@
-from main import db, session, Base
+from . import db, session, Base
 from sqlalchemy.orm import relationship
 from flask_jwt_extended import  create_access_token
 from datetime import timedelta
@@ -10,6 +10,63 @@ class Video(Base):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     name = db.Column(db.String(250), nullable=False)
     description = db.Column(db.String(500), nullable=False)
+
+    @classmethod
+    def get_user_list(cls, user_id):
+        try:
+            videos = cls.query.filter(cls.user_id == user_id).all()
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        return videos
+
+    @classmethod
+    def get_list(cls):
+        try:
+            videos = cls.query.all()
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        return videos
+
+    def save(self):
+        try:
+            session.add(self)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+    @classmethod
+    def get(cls, tutorial_id, user_id):
+        try:
+            video = cls.query.filter(Video.id == tutorial_id, Video.user_id == user_id).first()
+            if not video:
+                raise Exception('No tutorial found')
+        except Exception:
+            session.rollback()
+            raise
+        return video
+
+
+    def update(self, **kwargs):
+        try:
+            for key, value in kwargs.items():
+                setattr(self,key, value)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
+
+    def delete(self):
+        try:
+            session.delete(self)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
     def to_dict(self):
         dictionary = {}
